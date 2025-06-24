@@ -1,0 +1,353 @@
+<?php
+require_once 'config/database.php';
+$title = 'Home';
+include 'includes/header.php';
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($title); ?> | Cermatinvest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <!-- AOS CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              rubik: ['Rubik', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+              },
+              dark: {
+                800: '#1e293b',
+                900: '#0f172a',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Rubik', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+        .transition-smooth {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .dark .card-hover:hover {
+            box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.1);
+        }
+        .task-item {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        .task-item:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.6rem;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: #3b82f6;
+        }
+        .dark .task-item:before {
+            background-color: #60a5fa;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased dark:bg-dark-900 dark:text-gray-200">
+    <!-- Dark mode toggle -->
+    <button id="darkModeToggle" class="fixed right-4 top-4 z-50 p-2 rounded-full bg-white dark:bg-dark-800 shadow-md">
+        <svg id="sunIcon" class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <svg id="moonIcon" class="w-5 h-5 text-blue-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+    </button>
+
+    <!-- Hero Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="md:w-1/2" data-aos="fade-right" data-aos-duration="800">
+                    <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight dark:text-white">
+                        Smart Investment <br>
+                        <span class="text-primary-600">Made Simple</span>
+                    </h1>
+                    <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8">
+                        Track, analyze, and optimize your investments all in one place with our weighted product model system.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                            <a href="dashboard.php" class="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-smooth">
+                                Go to Dashboard
+                            </a>
+                        <?php else: ?>
+                            <a href="register.php" class="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-smooth">
+                                Get Started
+                            </a>
+                            <a href="#features" class="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-dark-800 transition-smooth">
+                                Learn More
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="md:w-1/2 mt-8 md:mt-0" data-aos="fade-left" data-aos-duration="800">
+                    <div class="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-md">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold dark:text-white">Today's Investments</h2>
+                            <span class="text-sm text-gray-500 dark:text-gray-400"><?php echo date('D, M j'); ?></span>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="task-item">
+                                <div class="font-medium dark:text-white">Portfolio Analysis</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Review performance metrics</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="font-medium dark:text-white">Stock Research</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Tech sector opportunities</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="font-medium dark:text-white">Rebalance Portfolio</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Adjust asset allocation</div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">100+ Assets</div>
+                            <div class="text-primary-600 dark:text-primary-400 font-bold">31</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 bg-white dark:bg-dark-800 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-3xl font-bold mb-4 dark:text-white">Investment Tracking Made Easy</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                    All the tools you need to manage your investments effectively.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gray-50 dark:bg-dark-700 p-6 rounded-xl shadow-sm card-hover" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-12 h-12 rounded-lg bg-primary-600 text-white flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 dark:text-white">Performance Tracking</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Monitor your investment returns across all assets in real-time with comprehensive analytics.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-50 dark:bg-dark-700 p-6 rounded-xl shadow-sm card-hover" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-12 h-12 rounded-lg bg-primary-600 text-white flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 dark:text-white">Portfolio Analysis</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Get detailed insights into your asset allocation, diversification, and risk exposure.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-50 dark:bg-dark-700 p-6 rounded-xl shadow-sm card-hover" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-12 h-12 rounded-lg bg-primary-600 text-white flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 dark:text-white">Smart Recommendations</h3>
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Our weighted product model suggests optimal investments based on your profile.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WPM Method Section -->
+    <section class="py-16 bg-gray-50 dark:bg-dark-900 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/2" data-aos="fade-right">
+                    <h2 class="text-3xl font-bold mb-6 dark:text-white">Weighted Product Model</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                        Our algorithm objectively compares investment options by assigning weights to different criteria based on your priorities.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-gray-700 dark:text-gray-300">Define your investment criteria and priorities</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-gray-700 dark:text-gray-300">Our system calculates optimal weights for each factor</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-gray-700 dark:text-gray-300">Get personalized investment recommendations</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2" data-aos="fade-left">
+                    <div class="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-md">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold dark:text-white">Investment Comparison</h3>
+                            <span class="text-sm text-primary-600 dark:text-primary-400">Weighted Score</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium dark:text-white">Tech Stocks</span>
+                                    <span class="font-medium dark:text-white">87</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary-600 h-2 rounded-full" style="width: 87%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium dark:text-white">Real Estate</span>
+                                    <span class="font-medium dark:text-white">72</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary-600 h-2 rounded-full" style="width: 72%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium dark:text-white">Bonds</span>
+                                    <span class="font-medium dark:text-white">65</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary-600 h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium dark:text-white">Cryptocurrency</span>
+                                    <span class="font-medium dark:text-white">58</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary-600 h-2 rounded-full" style="width: 58%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 bg-primary-600 text-white px-4 sm:px-6 lg:px-8" data-aos="fade-up">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Optimize Your Investments?</h2>
+            <p class="text-lg mb-8 max-w-2xl mx-auto">
+                Join thousands of investors who make data-driven decisions with our platform.
+            </p>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="dashboard.php" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-primary-600 bg-white hover:bg-gray-100 transition-smooth">
+                    Go to Dashboard
+                    <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            <?php else: ?>
+                <a href="register.php" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-primary-600 bg-white hover:bg-gray-100 transition-smooth">
+                    Start Free Trial
+                    <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            <?php endif; ?>
+        </div>
+    </section>
+
+    <?php include 'includes/footer.php'; ?>
+    
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 600,
+            easing: 'ease-in-out',
+            once: true,
+            offset: 100,
+        });
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        
+        // Check for saved user preference or system preference
+        if (localStorage.getItem('darkMode') === 'true' || 
+            (!localStorage.getItem('darkMode') &&   window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        }
+        
+        // Toggle dark mode
+        darkModeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            sunIcon.classList.toggle('hidden');
+            moonIcon.classList.toggle('hidden');
+            
+            // Save user preference
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+    </script>
+</body>
+</html>

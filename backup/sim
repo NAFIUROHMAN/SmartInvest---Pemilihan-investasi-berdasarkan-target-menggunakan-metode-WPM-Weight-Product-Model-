@@ -1,0 +1,25 @@
+ <?php if (!isset($_GET['id'])): ?>
+                <form method="POST" action="hasil.php" class="w-full md:w-auto">
+                    <input type="hidden" name="action" value="calculate">
+                    <input type="hidden" name="save" value="1">
+                    <?php foreach ($results['criteria'] as $criterion): ?>
+                        <input type="hidden" name="investasi1" value="<?php echo htmlspecialchars($results['investasi1']); ?>">
+                        <input type="hidden" name="investasi2" value="<?php echo htmlspecialchars($results['investasi2']); ?>">
+                        <input type="hidden" name="kategori" value="<?php echo htmlspecialchars($results['kategori']); ?>">
+                    <?php endforeach; ?>
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-full hover:from-green-600 hover:to-green-700 transition duration-300 shadow-md flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i> Simpan & Kembali ke Beranda
+                    </button>
+                </form>
+            <?php else: ?>
+
+
+                <button onclick="window.print()" class="bg-gray-600 text-white py-2 px-6 rounded-lg hover:bg-gray-700 transition duration-300">
+                <i class="fas fa-download mr-2"></i>Download Hasil
+            </button>
+
+            
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['action'])) {
+    header('Location: input_kriteria.php');
+    exit();
+}

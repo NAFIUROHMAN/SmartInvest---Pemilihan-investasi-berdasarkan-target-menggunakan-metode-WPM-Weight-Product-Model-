@@ -1,0 +1,450 @@
+<?php
+require_once 'includes/auth_check.php';
+require_once 'config/database.php'; // Make sure this file exists and connects to smartinvest DB
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Lengkap Jenis Investasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Include Header/Navbar -->
+    <?php include'includes/header.php'; ?>
+
+    
+    <div class="container mx-auto px-2 mt-10">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Panduan Lengkap Jenis Investasi</h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Temukan berbagai instrumen investasi yang tersedia dan pilih yang sesuai dengan profil risiko dan tujuan finansial Anda.</p>
+            
+            <!-- Search Bar -->
+            <div class="max-w-2xl mx-auto mt-8">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Cari jenis investasi..." 
+                           class="w-full px-6 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                    <div class="absolute right-3 top-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Filter Section -->
+        <div class="mt-8 p-6 bg-white rounded-[2rem] shadow-md">
+            <h3 class="text-lg font-semibold mb-4">Filter Investasi</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tingkat Risiko</label>
+                    <select id="riskFilter" class="w-full px-3 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Semua Risiko</option>
+                        <option value="low-risk">Rendah</option>
+                        <option value="medium-risk">Sedang</option>
+                        <option value="high-risk">Tinggi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Modal</label>
+                    <select id="capitalFilter" class="w-full px-3 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Semua Modal</option>
+                        <option value="modal-kecil">Kecil (Rp 100rb - 1jt)</option>
+                        <option value="modal-sedang">Sedang (Rp 1jt - 10jt)</option>
+                        <option value="modal-besar">Besar (> Rp 10jt)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                    <select id="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Semua Kategori</option>
+                        <option value="saham">Saham</option>
+                        <option value="obligasi">Obligasi</option>
+                        <option value="reksadana">Reksadana</option>
+                        <option value="properti">Properti</option>
+                        <option value="logam-mulia">Logam Mulia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button id="resetFilters" class="px-5 py-2 bg-blue-600 border-2 text-white rounded-full hover:bg-gray-50 hover:text-blue-600 transition duration-300">
+                    Reset Filter
+                </button>
+            </div>
+        </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="investmentGrid">
+            <!-- Saham -->
+<a href="saham.php" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="saham" data-category="saham,modal-besar,high-risk,capital-growth">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Saham</h3>
+        </div>
+        <p class="text-gray-600">Investasi kepemilikan perusahaan dengan potensi keuntungan dari capital gain dan dividen.</p>
+    </div>
+</a>
+
+<!-- Obligasi -->
+<a href="obligasi.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="obligasi" data-category="obligasi,modal-besar,low-risk,pendapatan-tetap">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-green-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Obligasi</h3>
+        </div>
+        <p class="text-gray-600">Surat utang dengan pembayaran bunga tetap dan pengembalian pokok pada jatuh tempo.</p>
+    </div>
+</a>
+
+<!-- Reksadana -->
+<a href="reksadana.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="reksadana" data-category="reksadana,modal-kecil,medium-risk,diversifikasi">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Reksadana</h3>
+        </div>
+        <p class="text-gray-600">Wadah untuk menghimpun dana dari masyarakat yang dikelola oleh Manajer Investasi.</p>
+    </div>
+</a>
+
+<!-- Deposito -->
+<a href="deposito.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="deposito" data-category="deposito,modal-kecil,low-risk,pendapatan-tetap">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-yellow-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Deposito</h3>
+        </div>
+        <p class="text-gray-600">Tabungan berjangka dengan bunga lebih tinggi daripada tabungan biasa.</p>
+    </div>
+</a>
+
+<!-- Tabungan Berjangka -->
+<a href="tabungan-berjangka.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="tabungan-berjangka" data-category="tabungan,modal-kecil,low-risk,pendapatan-tetap">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-indigo-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Tabungan Berjangka</h3>
+        </div>
+        <p class="text-gray-600">Produk tabungan dengan jangka waktu tertentu dan syarat penyetoran rutin.</p>
+    </div>
+</a>
+
+<!-- Properti -->
+<a href="properti.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="properti" data-category="properti,modal-besar,medium-risk,capital-growth">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-red-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Properti</h3>
+        </div>
+        <p class="text-gray-600">Investasi tanah, bangunan, atau properti fisik lainnya dengan potensi apresiasi nilai.</p>
+    </div>
+</a>
+
+<!-- Forex -->
+<a href="forex.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="forex" data-category="forex,modal-kecil,high-risk,short-term">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-teal-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Forex</h3>
+        </div>
+        <p class="text-gray-600">Perdagangan mata uang asing dengan tujuan memperoleh keuntungan dari fluktuasi nilai tukar.</p>
+    </div>
+</a>
+
+<!-- Unit Link -->
+<a href="unitlink.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="unit-link" data-category="asuransi,modal-kecil,medium-risk,long-term">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-cyan-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Unit Link</h3>
+        </div>
+        <p class="text-gray-600">Produk asuransi yang menggabungkan proteksi dengan investasi dalam satu polis.</p>
+    </div>
+</a>
+
+<!-- P2P Lending -->
+<a href="p2p.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="p2p-lending" data-category="p2p,modal-kecil,high-risk,pendapatan-tetap">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-lime-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-lime-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">P2P Lending</h3>
+        </div>
+        <p class="text-gray-600">Pendanaan langsung dari investor ke peminjam melalui platform online dengan imbal hasil menarik.</p>
+    </div>
+</a>
+
+<!-- Cryptocurrency -->
+<a href="crypto.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="cryptocurrency" data-category="crypto,modal-kecil,high-risk,volatile">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-gray-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Cryptocurrency</h3>
+        </div>
+        <p class="text-gray-600">Aset digital terdesentralisasi menggunakan teknologi blockchain dengan volatilitas tinggi.</p>
+    </div>
+</a>
+
+<!-- NFT -->
+<a href="nft.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="nft" data-category="nft,modal-besar,high-risk,koleksi-digital">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-pink-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">NFT</h3>
+        </div>
+        <p class="text-gray-600">Aset digital unik yang mewakili kepemilikan atas barang koleksi digital atau karya seni.</p>
+    </div>
+</a>
+
+<!-- Crowdfunding Properti -->
+<a href="crowdfunding-properti.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="crowdfunding-properti" data-category="properti,modal-kecil,medium-risk,capital-growth">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-orange-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Crowdfunding Properti</h3>
+        </div>
+        <p class="text-gray-600">Investasi properti bersama-sama melalui platform online dengan modal kecil.</p>
+    </div>
+</a>
+
+<!-- ETF -->
+<a href="etf.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="etf" data-category="reksadana,modal-kecil,medium-risk,diversifikasi">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">ETF</h3>
+        </div>
+        <p class="text-gray-600">Dana yang diperdagangkan di bursa seperti saham, mengikuti indeks atau sektor tertentu.</p>
+    </div>
+</a>
+
+<!-- Index Fund -->
+<a href="index-fund.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="index-fund" data-category="reksadana,modal-kecil,low-risk,diversifikasi">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-indigo-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Index Fund</h3>
+        </div>
+        <p class="text-gray-600">Reksadana pasif yang bertujuan meniru kinerja indeks pasar tertentu.</p>
+    </div>
+</a>
+
+<!-- Mikro Investasi -->
+<a href="mikro-investasi.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="mikro-investasi" data-category="modal-kecil,low-risk,long-term">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-green-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Mikro Investasi</h3>
+        </div>
+        <p class="text-gray-600">Investasi dengan modal kecil melalui aplikasi atau platform digital.</p>
+    </div>
+</a>
+
+<!-- Saham Syariah -->
+<a href="saham-syariah.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="saham-syariah" data-category="saham,syariah,modal-besar,medium-risk">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Saham Syariah</h3>
+        </div>
+        <p class="text-gray-600">Saham perusahaan yang memenuhi prinsip-prinsip syariah Islam.</p>
+    </div>
+</a>
+
+<!-- Reksadana Syariah -->
+<a href="reksadana-syariah.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="reksadana-syariah" data-category="reksadana,syariah,modal-kecil,low-risk">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Reksadana Syariah</h3>
+        </div>
+        <p class="text-gray-600">Reksadana yang dikelola sesuai dengan prinsip syariah Islam.</p>
+    </div>
+</a>
+
+<!-- Koleksi -->
+<a href="koleksi.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="koleksi" data-category="koleksi,modal-besar,high-risk,illiquid">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-red-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Koleksi</h3>
+        </div>
+        <p class="text-gray-600">Investasi dalam barang koleksi seperti seni, anggur, atau barang antik.</p>
+    </div>
+</a>
+
+<!-- Komoditas -->
+<a href="komoditas.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="komoditas" data-category="komoditas,modal-besar,high-risk,volatile">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-yellow-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Komoditas</h3>
+        </div>
+        <p class="text-gray-600">Investasi dalam bahan baku seperti minyak, gas, atau produk pertanian.</p>
+    </div>
+</a>
+
+<!-- Logam Mulia -->
+<a href="logam-mulia.html" class="bg-white rounded-[2rem] shadow-md overflow-hidden hover:shadow-xl transition duration-300 investment-card" data-name="logam-mulia" data-category="logam-mulia,modal-kecil,low-risk,lindung-nilai">
+    <div class="p-6">
+        <div class="flex items-center mb-4">
+            <div class="bg-amber-100 p-3 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800">Logam Mulia</h3>
+        </div>
+        <p class="text-gray-600">Investasi dalam logam berharga seperti emas, perak, platinum, dan palladium.</p>
+    </div>
+</a>
+            
+        </div>
+
+    </div>
+
+    <!-- Include Footer -->
+    <?php include 'includes/footer.php'; ?>
+
+
+    <script>
+        // Fungsi pencarian
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const investmentCards = document.querySelectorAll('.investment-card');
+            
+            investmentCards.forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Fungsi filter
+        function applyFilters() {
+            const riskFilter = document.getElementById('riskFilter').value;
+            const capitalFilter = document.getElementById('capitalFilter').value;
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            const investmentCards = document.querySelectorAll('.investment-card');
+            
+            investmentCards.forEach(card => {
+                const categories = card.getAttribute('data-category').split(',');
+                
+                const riskMatch = !riskFilter || categories.includes(riskFilter);
+                const capitalMatch = !capitalFilter || categories.includes(capitalFilter);
+                const categoryMatch = !categoryFilter || categories.includes(categoryFilter);
+                
+                if (riskMatch && capitalMatch && categoryMatch) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Event listeners untuk filter
+        document.getElementById('riskFilter').addEventListener('change', applyFilters);
+        document.getElementById('capitalFilter').addEventListener('change', applyFilters);
+        document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+
+        // Reset filter
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('riskFilter').value = '';
+            document.getElementById('capitalFilter').value = '';
+            document.getElementById('categoryFilter').value = '';
+            applyFilters();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<?php
+require_once 'includes/auth_check.php';
+require_once 'config/database.php';
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'calculate') {
+    // Validate inputs
+    if (empty($_POST['investasi1']) || empty($_POST['investasi2']) || empty($_POST['kategori'])) {
+        $_SESSION['error'] = "Nama investasi dan kategori harus diisi";
+        header('Location: input_kriteria.php');
+        exit();
+    }
+
+    // Process the form data and calculate WPM
+    $investasi1 = htmlspecialchars(trim($_POST['investasi1']));
+    $investasi2 = htmlspecialchars(trim($_POST['investasi2']));
+    $kategori = htmlspecialchars(trim($_POST['kategori']));
+    
+    // Get all criteria (default + custom)
+    $criteria = [];
+    $total_bobot = 0;
+    
+    // Process default criteria with dynamic types based on investment category
+    if (isset($_POST['bobot'])) {
+        foreach ($_POST['bobot'] as $id_kriteria => $bobot) {
+            // Validate criteria
+            if (!is_numeric($bobot) || $bobot <= 0) {
+                $_SESSION['error'] = "Bobot kriteria harus berupa angka positif";
+                header('Location: input_kriteria.php');
+                exit();
+            }
+
+            $stmt = $pdo->prepare("SELECT nama_kriteria FROM kriteria WHERE id_kriteria = ?");
+            $stmt->execute([$id_kriteria]);
+            $criterion = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$criterion) {
+                continue; // Skip if criterion not found
+            }
+            
+            // Determine criterion type based on investment category and criterion name
+            $criterion_type = 'benefit'; // Default
+            
+            // Logic for determining type based on investment category
+            if ($kategori === 'kebutuhan-masa-depan') {
+                if (stripos($criterion['nama_kriteria'], 'resiko') !== false) {
+                    $criterion_type = 'cost';
+                } else {
+                    $criterion_type = 'benefit';
+                }
+            } elseif ($kategori === 'investasi-uang-dingin') {
+                if (stripos($criterion['nama_kriteria'], 'liquiditas') !== false) {
+                    $criterion_type = 'cost';
+                } else {
+                    $criterion_type = 'benefit';
+                }
+            } elseif ($kategori === 'melawan-inflasi') {
+                if (stripos($criterion['nama_kriteria'], 'resiko') !== false) {
+                    $criterion_type = 'cost';
+                } else {
+                    $criterion_type = 'benefit';
+                }
+            }
+            
+            $criteria[] = [
+                'id' => $id_kriteria,
+                'name' => $criterion['nama_kriteria'],
+                'weight' => (float)$bobot,
+                'type' => $criterion_type,
+                'values' => [
+                    1 => (int)$_POST['nilai'][$id_kriteria][1],
+                    2 => (int)$_POST['nilai'][$id_kriteria][2]
+                ]
+            ];
+            
+            $total_bobot += (float)$bobot;
+        }
+    }
+    
+    // Process custom criteria
+    if (isset($_POST['custom_bobot'])) {
+        foreach ($_POST['custom_bobot'] as $index => $bobot) {
+            // Validate custom criteria
+            if (empty($_POST['custom_name'][$index])) {
+                continue; // Skip if name is empty
+            }
+            
+            if (!is_numeric($bobot) || $bobot <= 0) {
+                $_SESSION['error'] = "Bobot kriteria kustom harus berupa angka positif";
+                header('Location: input_kriteria.php');
+                exit();
+            }
+
+            $criteria[] = [
+                'id' => 'custom_' . $index,
+                'name' => htmlspecialchars(trim($_POST['custom_name'][$index])),
+                'weight' => (float)$bobot,
+                'type' => in_array($_POST['custom_type'][$index], ['benefit', 'cost']) ? $_POST['custom_type'][$index] : 'benefit',
+                'values' => [
+                    1 => (int)$_POST['custom_nilai'][$index][1],
+                    2 => (int)$_POST['custom_nilai'][$index][2]
+                ]
+            ];
+            
+            $total_bobot += (float)$bobot;
+        }
+    }
+    
+    // Check if we have at least one criterion
+    if (count($criteria) === 0) {
+        $_SESSION['error'] = "Minimal harus ada satu kriteria untuk perbandingan";
+        header('Location: input_kriteria.php');
+        exit();
+    }
+    
+    // Normalize weights if total is not 1
+    if ($total_bobot != 1) {
+        foreach ($criteria as &$criterion) {
+            $criterion['weight'] = $criterion['weight'] / $total_bobot;
+        }
+        unset($criterion);
+    }
+    
+    // Calculate WPM
+    $vector_s = [1 => 1, 2 => 1]; // Initialize with 1 for multiplication
+    $vector_v = [1 => 0, 2 => 0];
+    
+    foreach ($criteria as $criterion) {
+        foreach ([1, 2] as $investment_num) {
+            $value = $criterion['values'][$investment_num];
+            
+            // Validate value
+            if ($value <= 0) {
+                $_SESSION['error'] = "Nilai kriteria harus lebih besar dari 0";
+                header('Location: input_kriteria.php');
+                exit();
+            }
+            
+            // For cost criteria, we use 1/value
+            if ($criterion['type'] === 'cost') {
+                $value = 1 / $value;
+            }
+            
+            $vector_s[$investment_num] *= pow($value, $criterion['weight']);
+        }
+    }
+    
+    // Calculate vector V
+    $total_s = $vector_s[1] + $vector_s[2];
+    $vector_v[1] = $vector_s[1] / $total_s;
+    $vector_v[2] = $vector_s[2] / $total_s;
+    
+    // Determine ranking
+    $ranking = $vector_v[1] > $vector_v[2] ? 1 : 2;
+    $difference = abs($vector_v[1] - $vector_v[2]);
+    
+    // Prepare results for display and storage
+    $results = [
+        'investasi1' => $investasi1,
+        'investasi2' => $investasi2,
+        'kategori' => $kategori,
+        'criteria' => $criteria,
+        'vector_s' => $vector_s,
+        'vector_v' => $vector_v,
+        'ranking' => $ranking,
+        'difference' => $difference,
+        'tanggal' => date('Y-m-d H:i:s')
+    ];
+    
+    // Store in session for display
+    $_SESSION['current_results'] = $results;
+    
+    // If user clicked "Save", store in database
+    if (isset($_POST['save'])) {
+        try {
+            $pdo->beginTransaction();
+            
+            // Save comparison
+            $stmt = $pdo->prepare("
+                INSERT INTO perbandingan (id_user, nama_investasi_1, nama_investasi_2, kategori_perbandingan)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$user_id, $investasi1, $investasi2, $kategori]);
+            $id_perbandingan = $pdo->lastInsertId();
+            
+            // Save criteria values
+            foreach ($criteria as $criterion) {
+                // Check if criterion exists or needs to be created
+                if (strpos($criterion['id'], 'custom_') === 0) {
+                    // Save custom criterion
+                    $stmt = $pdo->prepare("
+                        INSERT INTO kriteria (id_user, nama_kriteria, bobot, tipe)
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $user_id,
+                        $criterion['name'],
+                        $criterion['weight'],
+                        $criterion['type']
+                    ]);
+                    $id_kriteria = $pdo->lastInsertId();
+                } else {
+                    $id_kriteria = $criterion['id'];
+                }
+                
+                // Save values for both investments
+                foreach ([1, 2] as $investment_num) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO nilai_kriteria (id_perbandingan, id_kriteria, nilai)
+                        VALUES (?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $id_perbandingan,
+                        $id_kriteria,
+                        $criterion['values'][$investment_num]
+                    ]);
+                }
+            }
+            
+            // Save results
+            $stmt = $pdo->prepare("
+                INSERT INTO hasil (id_perbandingan, hasil_json, vektor_s_1, vektor_s_2, vektor_v_1, vektor_v_2, ranking, selisih)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $id_perbandingan,
+                json_encode($results),
+                $vector_s[1],
+                $vector_s[2],
+                $vector_v[1],
+                $vector_v[2],
+                $ranking,
+                $difference
+            ]);
+            
+            $pdo->commit();
+            
+            // Clear current results from session after saving
+            unset($_SESSION['current_results']);
+            
+            // Redirect to dashboard with success message
+            $_SESSION['success'] = "Perbandingan berhasil disimpan!";
+            header('Location: dashboard.php');
+            exit();
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $_SESSION['error'] = "Gagal menyimpan perbandingan: " . $e->getMessage();
+            header('Location: hasil.php');
+            exit();
+        }
+    }
+} elseif (isset($_GET['id'])) {
+    // Display saved results
+    $stmt = $pdo->prepare("
+        SELECT h.*, p.nama_investasi_1, p.nama_investasi_2, p.kategori_perbandingan, p.tanggal
+        FROM hasil h
+        JOIN perbandingan p ON h.id_perbandingan = p.id_perbandingan
+        WHERE h.id_hasil = ? AND p.id_user = ?
+    ");
+    $stmt->execute([$_GET['id'], $user_id]);
+    $saved_result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$saved_result) {
+        $_SESSION['error'] = "Perbandingan tidak ditemukan";
+        header('Location: dashboard.php');
+        exit();
+    }
+    
+    $results = json_decode($saved_result['hasil_json'], true);
+    $results['vector_s'] = [
+        1 => $saved_result['vektor_s_1'],
+        2 => $saved_result['vektor_s_2']
+    ];
+    $results['vector_v'] = [
+        1 => $saved_result['vektor_v_1'],
+        2 => $saved_result['vektor_v_2']
+    ];
+    $results['ranking'] = $saved_result['ranking'];
+    $results['difference'] = $saved_result['selisih'];
+    $results['tanggal'] = $saved_result['tanggal'];
+} elseif (!isset($_SESSION['current_results'])) {
+    $_SESSION['error'] = "Tidak ada data perbandingan yang tersedia";
+    header('Location: input_kriteria.php');
+    exit();
+} else {
+    $results = $_SESSION['current_results'];
+}
+
+$title = 'Hasil Perbandingan';
+include 'includes/header.php';
+?>
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Notification Messages -->
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-md">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-3"></i>
+                <p><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></p>
+            </div>
+        </div>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg shadow-md">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-3"></i>
+                <p><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></p>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Header Section -->
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Hasil Perbandingan Investasi</h1>
+        <p class="text-gray-600">Analisis menggunakan metode Weighted Product Model (WPM)</p>
+        
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <span class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                <i class="far fa-calendar-alt mr-1"></i> <?php echo date('d M Y H:i', strtotime($results['tanggal'])); ?>
+            </span>
+            <span class="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full">
+                <i class="fas fa-tag mr-1"></i> <?php echo ucwords(str_replace('-', ' ', $results['kategori'])); ?>
+            </span>
+        </div>
+    </div>
+
+    <!-- Comparison Summary Card -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-md mb-8 border border-gray-100">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">1</span>
+                    <?php echo htmlspecialchars($results['investasi1']); ?>
+                </h3>
+                <div class="text-center py-3">
+                    <div class="text-2xl font-bold text-blue-600 mb-1"><?php echo number_format($results['vector_v'][1] * 100, 2); ?>%</div>
+                    <div class="text-sm text-gray-500">Nilai Preferensi</div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">2</span>
+                    <?php echo htmlspecialchars($results['investasi2']); ?>
+                </h3>
+                <div class="text-center py-3">
+                    <div class="text-2xl font-bold text-blue-600 mb-1"><?php echo number_format($results['vector_v'][2] * 100, 2); ?>%</div>
+                    <div class="text-sm text-gray-500">Nilai Preferensi</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Winner Banner -->
+        <div class="mt-6 text-center">
+            <div class="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-xl px-8 py-3 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <i class="fas fa-trophy mr-2"></i>
+                <span class="font-bold">Rekomendasi: <?php echo $results['ranking'] === 1 ? htmlspecialchars($results['investasi1']) : htmlspecialchars($results['investasi2']); ?></span>
+                <span class="ml-2 text-yellow-100 text-sm">(Selisih: <?php echo number_format($results['difference'] * 100, 2); ?>%)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Criteria Comparison Section -->
+    <div class="bg-white p-6 rounded-xl shadow-md mb-8 border border-gray-200">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">
+                <i class="fas fa-list-ul text-blue-500 mr-2"></i> Perbandingan Kriteria
+            </h2>
+            <div class="text-sm text-gray-500">
+                Total <?php echo count($results['criteria']); ?> Kriteria
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kriteria</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bobot</th>
+                        <?php if (array_column($results['criteria'], 'type')): ?>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                        <?php endif; ?>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo htmlspecialchars($results['investasi1']); ?></th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo htmlspecialchars($results['investasi2']); ?></th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php foreach ($results['criteria'] as $criterion): 
+                        $better_value = $criterion['type'] === 'benefit' ? 
+                            ($criterion['values'][1] > $criterion['values'][2] ? 1 : 2) : 
+                            ($criterion['values'][1] < $criterion['values'][2] ? 1 : 2);
+                    ?>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <?php echo htmlspecialchars($criterion['name']); ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <?php echo number_format($criterion['weight'] * 100, 1); ?>%
+                            </td>
+                            <?php if (isset($criterion['type'])): ?>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    <?php echo $criterion['type'] === 'benefit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+                                    <?php echo $criterion['type'] === 'benefit' ? 'Benefit' : 'Cost'; ?>
+                                </span>
+                            </td>
+                            <?php endif; ?>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium 
+                                <?php echo $better_value === 1 ? 'text-green-600' : 'text-gray-500'; ?>">
+                                <?php echo $criterion['values'][1]; ?>
+                                <?php if ($better_value === 1): ?>
+                                    <i class="fas fa-check-circle ml-1 text-green-500"></i>
+                                <?php endif; ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium 
+                                <?php echo $better_value === 2 ? 'text-green-600' : 'text-gray-500'; ?>">
+                                <?php echo $criterion['values'][2]; ?>
+                                <?php if ($better_value === 2): ?>
+                                    <i class="fas fa-check-circle ml-1 text-green-500"></i>
+                                <?php endif; ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <?php if (isset($criterion['type'])): ?>
+                                    <?php echo $better_value === 1 ? htmlspecialchars($results['investasi1']) : htmlspecialchars($results['investasi2']); ?>
+                                    lebih <?php echo $criterion['type'] === 'benefit' ? 'tinggi' : 'rendah'; ?>
+                                <?php else: ?>
+                                    <?php echo $better_value === 1 ? htmlspecialchars($results['investasi1']) : htmlspecialchars($results['investasi2']); ?>
+                                    lebih baik
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Calculation Details Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Vector S -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-chart-line text-blue-500 mr-2"></i> Vektor S (Skor)
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($results['investasi1']); ?></span>
+                        <span class="text-sm font-medium text-blue-600"><?php echo number_format($results['vector_s'][1], 6); ?></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" 
+                             style="width: <?php echo ($results['vector_s'][1] / max($results['vector_s'][1], $results['vector_s'][2])) * 100; ?>%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($results['investasi2']); ?></span>
+                        <span class="text-sm font-medium text-blue-600"><?php echo number_format($results['vector_s'][2], 6); ?></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" 
+                             style="width: <?php echo ($results['vector_s'][2] / max($results['vector_s'][1], $results['vector_s'][2])) * 100; ?>%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Vector V -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-percentage text-blue-500 mr-2"></i> Vektor V (Preferensi)
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($results['investasi1']); ?></span>
+                        <span class="text-sm font-medium text-green-600"><?php echo number_format($results['vector_v'][1] * 100, 2); ?>%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-green-600 h-2.5 rounded-full" style="width: <?php echo $results['vector_v'][1] * 100; ?>%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($results['investasi2']); ?></span>
+                        <span class="text-sm font-medium text-green-600"><?php echo number_format($results['vector_v'][2] * 100, 2); ?>%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-green-600 h-2.5 rounded-full" style="width: <?php echo $results['vector_v'][2] * 100; ?>%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div class="flex flex-col sm:flex-row w-full md:w-auto space-y-2 sm:space-y-0 sm:space-x-2">
+                <a href="input_kriteria.php" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-full hover:from-blue-600 hover:to-blue-700 transition duration-300 shadow-md flex items-center justify-center">
+                    <i class="fas fa-redo mr-2"></i> Bandingkan Lagi
+                </a>
+                
+                <button onclick="downloadAsPDF()" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white py-3 px-6 rounded-full hover:from-gray-600 hover:to-gray-700 transition duration-300 shadow-md flex items-center justify-center">
+                    <i class="fas fa-download mr-2"></i> Download Hasil
+                </button>
+            </div>
+            
+            <?php if (!isset($_GET['id'])): ?>
+                <form method="POST" action="hasil.php" class="w-full md:w-auto">
+                    <input type="hidden" name="action" value="calculate">
+                    <input type="hidden" name="save" value="1">
+                    <?php foreach ($results['criteria'] as $criterion): ?>
+                        <input type="hidden" name="investasi1" value="<?php echo htmlspecialchars($results['investasi1']); ?>">
+                        <input type="hidden" name="investasi2" value="<?php echo htmlspecialchars($results['investasi2']); ?>">
+                        <input type="hidden" name="kategori" value="<?php echo htmlspecialchars($results['kategori']); ?>">
+                    <?php endforeach; ?>
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-full hover:from-green-600 hover:to-green-700 transition duration-300 shadow-md flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i> Simpan & Kembali ke Beranda
+                    </button>
+                </form>
+            <?php else: ?>
+                <a href="dashboard.php" class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-6 rounded-full hover:from-purple-600 hover:to-purple-700 transition duration-300 shadow-md flex items-center justify-center">
+                    <i class="fas fa-home mr-2"></i> Kembali ke Beranda
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for PDF Download -->
+<script>
+function downloadAsPDF() {
+    // You would need a PDF generation library like jsPDF or html2pdf.js
+    // This is a placeholder for the actual implementation
+    alert("Fitur download akan mengkonversi halaman ini ke PDF. Implementasi aktual membutuhkan library seperti jsPDF atau html2pdf.js.");
+    // window.print(); // Fallback to print if PDF generation not implemented
+}
+</script>
+
+<!-- Print Styles -->
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .container, .container * {
+            visibility: visible;
+        }
+        .container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+<?php include 'includes/footer.php'; ?>

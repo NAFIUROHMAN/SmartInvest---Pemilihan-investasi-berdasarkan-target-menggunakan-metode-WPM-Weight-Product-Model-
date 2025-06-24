@@ -1,0 +1,222 @@
+<?php
+require_once 'includes/auth_check.php';
+$title = 'Hasil Perbandingan Investasi';
+include 'includes/header.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['action'])) {
+    header('Location: input_kriteria.php');
+    exit();
+}
+
+// Get form data
+$purpose = $_POST['investment_purpose'];
+$investasi1 = htmlspecialchars($_POST['investasi1']);
+$investasi2 = htmlspecialchars($_POST['investasi2']);
+
+// Get weights and values
+$weights = [
+    'return' => (float)$_POST['bobot']['return'],
+    'risk' => (float)$_POST['bobot']['risk'],
+    'liquidity' => (float)$_POST['bobot']['liquidity']
+];
+
+$values = [
+    'investasi1' => [
+        'return' => (float)$_POST['nilai']['return'][1],
+        'risk' => (float)$_POST['nilai']['risk'][1],
+        'liquidity' => (int)$_POST['nilai']['liquidity'][1]
+    ],
+    'investasi2' => [
+        'return' => (float)$_POST['nilai']['return'][2],
+        'risk' => (float)$_POST['nilai']['risk'][2],
+        'liquidity' => (int)$_POST['nilai']['liquidity'][2]
+    ]
+];
+
+// Determine criteria types based on investment purpose
+$criteriaTypes = [];
+switch ($purpose) {
+    case 'future':
+        $criteriaTypes = [
+            'return' => 'benefit',
+            'risk' => 'cost',
+            'liquidity' => 'benefit'
+        ];
+        break;
+    case 'cold_money':
+        $criteriaTypes = [
+            'return' => 'benefit',
+            'risk' => 'benefit',
+            'liquidity' => 'cost'
+        ];
+        break;
+    case 'inflation':
+        $criteriaTypes = [
+            'return' => 'benefit',
+            'risk' => 'cost',
+            'liquidity' => 'benefit'
+        ];
+        break;
+    default:
+        $criteriaTypes = [
+            'return' => 'benefit',
+            'risk' => 'cost',
+            'liquidity' => 'benefit'
+        ];
+}
+
+// Function to normalize values based on criteria type
+function normalizeValue($value, $type) {
+    if ($type === 'cost') {
+        // For cost criteria, lower values are better
+        return 1 / max($value, 0.0001); // Avoid division by zero
+    }
+    // For benefit criteria, higher values are better
+    return $value;
+}
+
+// Calculate WPM scores
+$wpm1 = 1;
+$wpm2 = 1;
+
+foreach ($weights as $criterion => $weight) {
+    $type = $criteriaTypes[$criterion];
+    
+    // Normalize values
+    $norm1 = normalizeValue($values['investasi1'][$criterion], $type);
+    $norm2 = normalizeValue($values['investasi2'][$criterion], $type);
+    
+    // Apply weighted product
+    $wpm1 *= pow($norm1, $weight);
+    $wpm2 *= pow($norm2, $weight);
+}
+
+// Calculate total score
+$total = $wpm1 + $wpm2;
+
+// Calculate percentages
+$percentage1 = ($wpm1 / $total) * 100;
+$percentage2 = ($wpm2 / $total) * 100;
+
+// Determine winner
+$winner = $percentage1 > $percentage2 ? $investasi1 : $investasi2;
+$winnerPercentage = max($percentage1, $percentage2);
+
+// Get purpose description
+$purposeDescriptions = [
+    'future' => 'Kebutuhan Masa Depan',
+    'cold_money' => 'Investasi Uang Dingin',
+    'inflation' => 'Melawan Inflasi'
+];
+$purposeText = $purposeDescriptions[$purpose] ?? 'Kebutuhan Masa Depan';
+?>
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($title); ?> | Cermatinvest</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Main Content -->
+        <main class="flex-grow p-6 md:p-8">
+            <div class="max-w-4xl mx-auto">
+                <!-- Header Section -->
+                <section class="mb-10">
+                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[1.5rem] p-8 shadow-lg">
+                        <h1 class="text-3xl font-bold text-white mb-2">Hasil Perbandingan Investasi</h1>
+                        <p class="text-blue-100">Tujuan Investasi: <?php echo $purposeText; ?></p>
+                    </div>
+                </section>
+
+                <!-- Result Section -->
+                <section>
+                    <div class="bg-white p-6 md:p-8 rounded-[1.5rem] shadow-sm">
+                        <!-- Winner Announcement -->
+                        <div class="mb-8 text-center">
+                            <div class="inline-block bg-green-100 text-green-800 py-2 px-6 rounded-full mb-4">
+                                <i class="fas fa-trophy mr-2"></i>Rekomendasi Terbaik
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-2"><?php echo $winner; ?></h2>
+                            <p class="text-gray-600">Dengan skor <span class="font-bold text-blue-600"><?php echo round($winnerPercentage, 2); ?>%</span></p>
+                        </div>
+                        
+                        <!-- Comparison Results -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <!-- Investment 1 -->
+                            <div class="p-6 border border-gray-100 rounded-[1rem] bg-gray-50">
+                                <h3 class="font-bold text-gray-800 text-lg mb-4"><?php echo $investasi1; ?></h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <p class="text-gray-600">Return: <span class="font-bold"><?php echo $values['investasi1']['return']; ?>%</span></p>
+                                        <p class="text-gray-600">Risiko: <span class="font-bold"><?php echo $values['investasi1']['risk']; ?>%</span></p>
+                                        <p class="text-gray-600">Likuiditas: <span class="font-bold"><?php echo $values['investasi1']['liquidity']; ?></span></p>
+                                    </div>
+                                    <div class="pt-4 border-t border-gray-200">
+                                        <p class="text-gray-800 font-medium">Skor WPM: <span class="text-blue-600"><?php echo round($wpm1, 4); ?></span></p>
+                                        <p class="text-gray-800 font-medium">Persentase: <span class="text-blue-600"><?php echo round($percentage1, 2); ?>%</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Investment 2 -->
+                            <div class="p-6 border border-gray-100 rounded-[1rem] bg-gray-50">
+                                <h3 class="font-bold text-gray-800 text-lg mb-4"><?php echo $investasi2; ?></h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <p class="text-gray-600">Return: <span class="font-bold"><?php echo $values['investasi2']['return']; ?>%</span></p>
+                                        <p class="text-gray-600">Risiko: <span class="font-bold"><?php echo $values['investasi2']['risk']; ?>%</span></p>
+                                        <p class="text-gray-600">Likuiditas: <span class="font-bold"><?php echo $values['investasi2']['liquidity']; ?></span></p>
+                                    </div>
+                                    <div class="pt-4 border-t border-gray-200">
+                                        <p class="text-gray-800 font-medium">Skor WPM: <span class="text-blue-600"><?php echo round($wpm2, 4); ?></span></p>
+                                        <p class="text-gray-800 font-medium">Persentase: <span class="text-blue-600"><?php echo round($percentage2, 2); ?>%</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Criteria Types -->
+                        <div class="mb-8">
+                            <h3 class="font-bold text-gray-800 mb-4">Tipe Kriteria yang Digunakan:</h3>
+                            <ul class="space-y-2">
+                                <li class="flex items-center">
+                                    <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800 mr-3">Benefit</span>
+                                    <span>Return</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-sm px-3 py-1 rounded-full <?php echo $criteriaTypes['risk'] === 'benefit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?> mr-3">
+                                        <?php echo ucfirst($criteriaTypes['risk']); ?>
+                                    </span>
+                                    <span>Risiko</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-sm px-3 py-1 rounded-full <?php echo $criteriaTypes['liquidity'] === 'benefit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?> mr-3">
+                                        <?php echo ucfirst($criteriaTypes['liquidity']); ?>
+                                    </span>
+                                    <span>Likuiditas</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row justify-center gap-4 pt-6 border-t border-gray-100">
+                            <a href="input_kriteria.php" class="flex-1 sm:flex-none bg-gray-200 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-300 transition duration-300 font-medium text-center">
+                                <i class="fas fa-redo mr-2"></i>Bandingkan Lagi
+                            </a>
+                            <a href="dashboard.php" class="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-full hover:from-blue-700 hover:to-indigo-700 transition duration-300 font-medium shadow-md text-center">
+                                <i class="fas fa-home mr-2"></i>Kembali ke Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <?php include 'includes/footer.php'; ?>
+    </div>
+</body>
+</html>
